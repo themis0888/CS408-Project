@@ -6,6 +6,7 @@ import SAD
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+from config import CONFIG
 
 # Change Every frame of video to images and return Number of images
 def video_to_frames(video, path_output_dir):
@@ -71,32 +72,39 @@ def select_image():
     # save image to another directory
     pass
 
-def detector(testimage):
-    # Basic Detector
-    positions_category = []
-    classes = ["cup","glasscase","greenbar","pencilcase","rice","scissors","shave","snack","socks","spaghetti","tape"]
-    
-    for i in range(10):
-        template_name = "templates_small/" + classes[i] + ".jpg"
-        target_name = testimage
-        positions_category.append(SAD.find_in_image(template_name, target_name))
-        SAD.draw_bounding_box(target_name, positions_category, 20, 36)
-    
-    print(positions_category)
-    SADs = []
-    for e in positions_category:
-        SADs.append(e[3])
-    SADs.sort()
-    print(SADs)
+'''
+parser_detector : list -> list, list, list
+parser_detector : result list from detector -> coordinate list, item list, value list
+'''
+def parser_detector(result_list):
+    coord_list, item_list, value_list = [], [], []
+    for i in result_list:
+        coord_list.append((i[0],i[1]))
+        item_list.append(i[2])
+        value_list.append(i[3])
+    return coord_list, item_list, value_list
 
 
 '''
-calculator : list of string -> list of string, integer
-calculator : item list -> item list, total price
+calculator : list of string -> list of int, int
+calculator : item list -> list of cost, total cost 
 '''
 def calculator(item_list = []):
     # print the item list and price
-    return  None
+    if len(item_list) == 0:
+        print("Err : empty item list")
+        return None
+    total_cost = 0
+    cost_list = []
+    for j in item_list:
+        cost_list.append(CONFIG[j])
+        if CONFIG[j] == 'end':
+            break
+        total_cost += CONFIG[j]
+
+    return  cost_list, total_cost
+
+print(calculator(parser_detector(input_list)[1]))
 
 
 # Program Starts from Here    
