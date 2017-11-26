@@ -89,9 +89,14 @@ def detector(testimage):
     SADs.sort()
     print(SADs)
 
-def calculator():
+
+'''
+calculator : list of string -> list of string, integer
+calculator : item list -> item list, total price
+'''
+def calculator(item_list = []):
     # print the item list and price
-    pass
+    return  None
 
 
 # Program Starts from Here    
