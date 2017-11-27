@@ -72,6 +72,24 @@ def select_image():
     # save image to another directory
     pass
 
+def detector(testimage):
+    # Basic Detector
+    positions_category = []
+    classes = ["cup","glasscase","greenbar","pencilcase","rice","scissors","shave","snack","socks","spaghetti","tape"]
+    
+    for i in range(10):
+        template_name = "templates_small/" + classes[i] + ".jpg"
+        target_name = testimage
+        positions_category.append(SAD.find_in_image(template_name, target_name))
+        SAD.draw_bounding_box(target_name, positions_category, 20, 36)
+    
+    print(positions_category)
+    SADs = []
+    for e in positions_category:
+        SADs.append(e[3])
+    SADs.sort()
+    print(SADs)
+
 '''
 parser_detector : list -> list, list, list
 parser_detector : result list from detector -> coordinate list, item list, value list
@@ -104,7 +122,7 @@ def calculator(item_list = []):
 
     return  cost_list, total_cost
 
-print(calculator(parser_detector(input_list)[1]))
+# print(calculator(parser_detector(input_list)[1]))
 
 
 # Program Starts from Here    
