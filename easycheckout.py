@@ -66,6 +66,8 @@ def initialize():
     # and then make another function main() in the initialize function
 
 
+
+
 def select_image():
     # select proper image to detect
     # from pre-built images
