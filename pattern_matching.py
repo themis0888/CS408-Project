@@ -10,7 +10,7 @@ from scipy.misc import imshow
 import numpy as np
 from scipy import signal
 from scipy import misc
-
+from os import walk
 
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
@@ -31,15 +31,16 @@ def angle_between(v1, v2):
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
 
-# Ex) draw_bounding_box(im, [[20,30,'cup',400]], 40,50)
-def draw_bounding_box(target,positions_category,t_width,t_height):
+# Ex) draw_bounding_box(im, [[20,30,'cup',400]])
+def draw_bounding_box(target,positions_category, filename):
     target_mat = target.load()
     for pos_cate in positions_category:
-        bestX = int(pos_cate[0])
-        bestY = int(pos_cate[1])
-        width = min(t_width, target.size[0]-bestX-1)
-        height = min(t_height, target.size[1]-bestY-1)
+        bestX = max(int(pos_cate[0]), 0)
+        bestY = max(int(pos_cate[1]), 0)
+        width = min(int(pos_cate[4]), target.size[0]-bestX-2)
+        height = min(int(pos_cate[5]), target.size[1]-bestY-2)
         category = pos_cate[2]
+        
         for i in range(width):
             target_mat[bestX+i,bestY+height] = (32, 20, 255)
             target_mat[bestX+i,bestY] = (32, 20, 255)
@@ -49,8 +50,8 @@ def draw_bounding_box(target,positions_category,t_width,t_height):
         # Write Text
         draw = ImageDraw.Draw(target)
 
-        draw.text((bestX+2, bestY+height+2),category,(255, 0, 0))
-    target.save("result2.jpg")
+        draw.text((bestX+2, bestY+2),category,(255, 0, 0))
+    target.save("result/" + filename)
     return target
 
 
@@ -74,53 +75,73 @@ def matchTemplate(searchImage, templateImage):
     corr = signal.correlate2d(si,ti,boundary = 'symm', mode = 'same')
     max_corr = np.argmax(corr)
     y,x = np.unravel_index(max_corr, corr.shape)
-
+    '''
     im1 = Image.new('RGB', (searchWidth, searchHeight), (80, 147, 0))
     im1.paste(searchImage, (0,0))
     im1.paste(templateImage, (x-int(templateWidth/2),y-int(templateHeight/2)))
-    print('Location : {},{}'.format(x,y))
     im1.save('template_matched_in_search.png')
-
+    '''
     return (x, y, max_corr)
 
+def resizeImage(searchIm, tempIm):
+    # search image is the latter one. 
+    searchImage = Image.open(searchIm)
+    #templateImage = Image.open("toimage/160.png")
 
-# search image is the latter one. 
-searchImage = Image.open("toimage/170.png")
-#templateImage = Image.open("toimage/160.png")
+    ratio = 0.3
 
-ratio = 0.3
+    #searchImage = Image.open("test_bg.jpg")
+    rawImage = searchImage
+    templateImage = Image.open(tempIm)
 
-#searchImage = Image.open("test_bg.jpg")
-rawImage = searchImage
-templateImage = Image.open("pattern/cup.png")
+    # make this as a grayscale image. 
+    searchImage = searchImage.convert('L')
+    templateImage = templateImage.convert('L')
 
-# make this as a grayscale image. 
-searchImage = searchImage.convert('L')
-templateImage = templateImage.convert('L')
+    # shrink the image for operation speed, and this still not affect to the performance
+    searchImage = searchImage.resize( [int(ratio * s) for s in searchImage.size] )
+    templateImage = templateImage.resize( [int(ratio * s) for s in templateImage.size] )
+    #rawImage = rawImage.resize( [int(ratio * s) for s in rawImage.size] )
+    # select the template image from current image. 
+    #templateImage = templateImage.crop((0,0.15*templateImage.size[1],0.3*templateImage.size[0],0.85*templateImage.size[1]))
+    return searchImage, templateImage, rawImage, ratio
 
-# shrink the image for operation speed, and this still not affect to the performance
-searchImage = searchImage.resize( [int(ratio * s) for s in searchImage.size] )
-templateImage = templateImage.resize( [int(ratio * s) for s in templateImage.size] )
-rawImage = rawImage.resize( [int(ratio * s) for s in rawImage.size] )
-# select the template image from current image. 
-#templateImage = templateImage.crop((0,0.15*templateImage.size[1],0.3*templateImage.size[0],0.85*templateImage.size[1]))
 
-x, y, corr = matchTemplate(searchImage, templateImage)
+item_list = ['cup', 'glasscase', 'pencilcase', 'rice', 'shaver', 'socks', 'spaghetti', 'tape']
 
-searchedImage = searchImage.crop((x - int(templateImage.size[0]/2), y - int(templateImage.size[1]/2),
-    x + int(templateImage.size[0]/2), y + int(templateImage.size[1]/2)))
-searchedImage = searchedImage.resize( [s for s in templateImage.size] )
+def find_item(item_list):
+    f = []
+    for (a,b,filenames) in walk('toimage/'):
+        f.extend(filenames)
 
-a = np.asarray(searchedImage.getdata())
-b = np.asarray(templateImage.getdata())
-diff = np.sum(abs(a-b))
+    for name in filenames:
+        print('File : {}'.format(name))
+        result_list = []
+        for item in CONFIG:
+            searchImage, templateImage, rawImage, ratio = resizeImage('toimage/' + name, 'pattern/'+ item + '.png')
+            t_width, t_height = templateImage.size
+            x, y, corr = matchTemplate(searchImage, templateImage)
 
-#if diff < 100000:
-    #return [x, y, 'cup', diff]
+            searchedImage = searchImage.crop((x - int(templateImage.size[0]/2), y - int(templateImage.size[1]/2),
+                x + int(templateImage.size[0]/2), y + int(templateImage.size[1]/2)))
+            searchedImage = searchedImage.resize( [s for s in templateImage.size] )
 
-draw_bounding_box(rawImage, [[x - int(templateImage.size[0]/2),y - int(templateImage.size[1]/2),'cup',diff]], 
-    templateImage.size[0], templateImage.size[1]).show()
-print('diff is : {}'.format(diff))
+            a = np.asarray(searchedImage.getdata())
+            b = np.asarray(templateImage.getdata())
+            diff = np.sum(abs(a-b))
+
+            if diff < 50000:
+                print('Location : {},{} \tItem : {}\tDiff : {}'.format(x,y, item, diff))
+                result_list.append([(x - int(t_width/2))/ratio, 
+                    (y - int(t_height/2))/ratio, item, diff, t_width/ratio, t_height/ratio])
+        draw_bounding_box(rawImage, result_list, name)
+        
+
+
+
+find_item(item_list)
+#draw_bounding_box(rawImage, result_list).show()
+
 
 
 
