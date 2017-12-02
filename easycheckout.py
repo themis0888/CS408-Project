@@ -10,6 +10,7 @@ from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 from config import CONFIG
+from os import walk
 
 # Change Every frame of video to images and return Number of images
 def video_to_frames(video, path_output_dir):
@@ -61,14 +62,14 @@ def run(app):
     app.changeStatus("Selecting\nImages ...")
     select_image()
     # TEMP FOR DEMO
-    selimg1 = "toimage/19.png"
+    #selimg1 = "toimage/19.png"
     print ("Selecting Images Ended")
     
     # Detecting images
     app.changeStatus("Detecting...")
     print ("Detecting ...")
     app.update()
-    detector(selimg1)
+    #detector(selimg1)
     print ("Detecting Ended")
     app.changeStatus("Detecing Ended")
     app.update()
@@ -82,9 +83,15 @@ def run(app):
     #time.sleep(5)
     #app.changeImage("toimage/0.png")
     #app.update()
-    #time.sleep(1)
-    #app.changeImage("toimage/11.png")
-    #app.update()
+    f = []
+    for (a,b,filenames) in walk('result/'):
+        f.extend(filenames)
+
+    for name in filenames:
+
+        time.sleep(0.2)
+        app.changeImage("result/" + name)
+        app.update()
     #time.sleep(10)
     #app.changeImage("toimage/24.png")
     a, b = calculator(detect_result)
