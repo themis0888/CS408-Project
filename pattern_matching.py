@@ -1,16 +1,13 @@
-import datetime
 #import cv2
-import sys
-import os
+#import sys
+#import os
 import SAD
-import numpy as np
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 from config import CONFIG
 from scipy.misc import imshow
 import numpy as np
-
 from scipy import signal
 from scipy import misc
 
@@ -34,52 +31,28 @@ def angle_between(v1, v2):
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
 
-def matchTemplate3(searchImage, templateImage):
-    minScore = -1000
-    matching_xs = 0
-    matching_ys = 0
-    searchWidth = searchImage.size[0]
-    searchHeight = searchImage.size[1]
-    templateWidth = templateImage.size[0]
-    templateHeight = templateImage.size[1]
-    searchIm = searchImage.load()
-    templateIm = templateImage.load()
-    #loop over each pixel in the search image
-    for xs in range(0,searchWidth-templateWidth+1,5):
-        for ys in range(0,searchHeight-templateHeight+1,5):
-        #for ys in range(10):
-            #set some kind of score variable to 0
-            '''
-            score = 0
-            #loop over each pixel in the template image
-            for xt in range(templateWidth):
-                for yt in range(templateHeight):
-                    score += 1 if searchIm[xs+xt,ys+yt] == templateIm[xt, yt] else -1
-            if minScore < score:
-                minScore = score
-                matching_xs = xs
-                matching_ys = ys
-            '''
-            score = 0
-            #loop over each pixel in the template image
-            for xt in range(templateWidth):
-                for yt in range(templateHeight):
-                    score  += abs(abs(searchIm[xs+xt,ys+yt][0] - templateIm[xt, yt][0])+
-                    abs(searchIm[xs+xt,ys+yt][1] - templateIm[xt, yt][1])+
-                    abs(searchIm[xs+xt,ys+yt][2] - templateIm[xt, yt][2]))
-            if minScore < score:
-                minScore = score
-                matching_xs = xs
-                matching_ys = ys
+# Ex) draw_bounding_box(im, [[20,30,'cup',400]], 40,50)
+def draw_bounding_box(target,positions_category,t_width,t_height):
+    target_mat = target.load()
+    for pos_cate in positions_category:
+        bestX = int(pos_cate[0])
+        bestY = int(pos_cate[1])
+        width = min(t_width, target.size[0]-bestX-1)
+        height = min(t_height, target.size[1]-bestY-1)
+        category = pos_cate[2]
+        for i in range(width):
+            target_mat[bestX+i,bestY+height] = (32, 20, 255)
+            target_mat[bestX+i,bestY] = (32, 20, 255)
+        for j in range(height):
+            target_mat[bestX,bestY+j] = (32, 20, 255)
+            target_mat[bestX+width,bestY+j] = (32, 20, 255)
+        # Write Text
+        draw = ImageDraw.Draw(target)
 
-                
-    print( "Location={} \t Score= {}".format(matching_xs, matching_ys, minScore))
-    im1 = Image.new('RGB', (matching_xs, matching_ys), (80, 147, 0))
-    im1.paste(searchImage, (0,0))
-    #searchImage.show()
-    #im1.show()
-    im1.save('template_matched_in_search.png')
-    return im1
+        draw.text((bestX+2, bestY+height+2),category,(255, 0, 0))
+    target.save("result2.jpg")
+    return target
+
 
 '''
 matchTemplate : Image Image -> tuple of integer
@@ -99,45 +72,59 @@ def matchTemplate(searchImage, templateImage):
     # give it a noise (because source image doesn't contain the exact same image)
     si = si + np.random.randn(*si.shape) * 5
     corr = signal.correlate2d(si,ti,boundary = 'symm', mode = 'same')
-    y,x = np.unravel_index(np.argmax(corr), corr.shape)
+    max_corr = np.argmax(corr)
+    y,x = np.unravel_index(max_corr, corr.shape)
 
-    # make the checking image 
-    '''
     im1 = Image.new('RGB', (searchWidth, searchHeight), (80, 147, 0))
     im1.paste(searchImage, (0,0))
     im1.paste(templateImage, (x-int(templateWidth/2),y-int(templateHeight/2)))
     print('Location : {},{}'.format(x,y))
-    #searchImage.show()
-    #im1.show()
     im1.save('template_matched_in_search.png')
-    '''
-    return (x,y)
+
+    return (x, y, max_corr)
 
 
 # search image is the latter one. 
-searchImage1 = Image.open("toimage/120.png")
-templateImage2 = Image.open("toimage/110.png")
+searchImage = Image.open("toimage/170.png")
+#templateImage = Image.open("toimage/160.png")
 
-# select the template imabe from current image. 
-templateImage1 = templateImage2.crop((0,0.15*templateImage2.size[1],0.3*templateImage2.size[0],0.85*templateImage2.size[1]))
 ratio = 0.3
 
-#searchImage1 = Image.open("test_bg.jpg")
-#templateImage1 = Image.open("cup.jpg")
-
+#searchImage = Image.open("test_bg.jpg")
+rawImage = searchImage
+templateImage = Image.open("pattern/cup.png")
 
 # make this as a grayscale image. 
-searchImage1 = searchImage1.convert('L')
-templateImage1 = templateImage1.convert('L')
+searchImage = searchImage.convert('L')
+templateImage = templateImage.convert('L')
 
 # shrink the image for operation speed, and this still not affect to the performance
-searchImage = searchImage1.resize( [int(ratio * s) for s in searchImage1.size] )
-templateImage = templateImage1.resize( [int(ratio * s) for s in templateImage1.size] )
+searchImage = searchImage.resize( [int(ratio * s) for s in searchImage.size] )
+templateImage = templateImage.resize( [int(ratio * s) for s in templateImage.size] )
+rawImage = rawImage.resize( [int(ratio * s) for s in rawImage.size] )
+# select the template image from current image. 
+#templateImage = templateImage.crop((0,0.15*templateImage.size[1],0.3*templateImage.size[0],0.85*templateImage.size[1]))
 
-t1=datetime.datetime.now()
-im = matchTemplate(searchImage, templateImage)
-im.show()
+x, y, corr = matchTemplate(searchImage, templateImage)
 
-delta=datetime.datetime.now()-t1
-print("Time=%d.%d"%(delta.seconds,delta.microseconds))
-print("end")
+searchedImage = searchImage.crop((x - int(templateImage.size[0]/2), y - int(templateImage.size[1]/2),
+    x + int(templateImage.size[0]/2), y + int(templateImage.size[1]/2)))
+searchedImage = searchedImage.resize( [s for s in templateImage.size] )
+
+a = np.asarray(searchedImage.getdata())
+b = np.asarray(templateImage.getdata())
+diff = np.sum(abs(a-b))
+
+#if diff < 100000:
+    #return [x, y, 'cup', diff]
+
+draw_bounding_box(rawImage, [[x - int(templateImage.size[0]/2),y - int(templateImage.size[1]/2),'cup',diff]], 
+    templateImage.size[0], templateImage.size[1]).show()
+print('diff is : {}'.format(diff))
+
+
+
+
+
+
+
