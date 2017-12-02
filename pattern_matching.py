@@ -83,6 +83,9 @@ def matchTemplate(searchImage, templateImage):
     '''
     return (x, y, max_corr)
 
+
+# shrink the image and return it. 
+# resizeImage : image(PIL), image -> image, image, image, num
 def resizeImage(searchIm, tempIm):
     # search image is the latter one. 
     searchImage = Image.open(searchIm)
@@ -102,26 +105,36 @@ def resizeImage(searchIm, tempIm):
     searchImage = searchImage.resize( [int(ratio * s) for s in searchImage.size] )
     templateImage = templateImage.resize( [int(ratio * s) for s in templateImage.size] )
     #rawImage = rawImage.resize( [int(ratio * s) for s in rawImage.size] )
+    
     # select the template image from current image. 
     #templateImage = templateImage.crop((0,0.15*templateImage.size[1],0.3*templateImage.size[0],0.85*templateImage.size[1]))
     return searchImage, templateImage, rawImage, ratio
 
 
-item_list = ['cup', 'glasscase', 'pencilcase', 'rice', 'shaver', 'socks', 'spaghetti', 'tape']
+#item_list = ['cup', 'glasscase', 'pencilcase', 'rice', 'shaver', 'socks', 'spaghetti', 'tape']
 
-def find_item(item_list):
+def find_item():
     f = []
     for (a,b,filenames) in walk('toimage/'):
         f.extend(filenames)
 
     for name in filenames:
+        # I don't know why, but there always 'DS_Store' file int this dir.
+        if 'DS_S' in name:
+            continue
         print('File : {}'.format(name))
+
+        # find the template and put it on this list 
         result_list = []
         for item in CONFIG:
+
+            # shrink the image 
             searchImage, templateImage, rawImage, ratio = resizeImage('toimage/' + name, 'pattern/'+ item + '.png')
             t_width, t_height = templateImage.size
             x, y, corr = matchTemplate(searchImage, templateImage)
 
+            # calculate the difference of two image (template and searched one)
+            # crop the searched part with same size of template image
             searchedImage = searchImage.crop((x - int(templateImage.size[0]/2), y - int(templateImage.size[1]/2),
                 x + int(templateImage.size[0]/2), y + int(templateImage.size[1]/2)))
             searchedImage = searchedImage.resize( [s for s in templateImage.size] )
@@ -130,22 +143,16 @@ def find_item(item_list):
             b = np.asarray(templateImage.getdata())
             diff = np.sum(abs(a-b))
 
+            # if the difference is not big, then append the list
             if diff < 50000:
                 print('Location : {},{} \tItem : {}\tDiff : {}'.format(x,y, item, diff))
                 result_list.append([(x - int(t_width/2))/ratio, 
                     (y - int(t_height/2))/ratio, item, diff, t_width/ratio, t_height/ratio])
+        # draw all entry in the list (found template)
         draw_bounding_box(rawImage, result_list, name)
         
 
 
 
-find_item(item_list)
+find_item()
 #draw_bounding_box(rawImage, result_list).show()
-
-
-
-
-
-
-
-
