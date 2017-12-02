@@ -25,14 +25,14 @@ def video_to_frames(video, path_output_dir):
                 # Rotate Clockwise 90
                 image = cv2.transpose(image, image)
                 image = cv2.flip(image, 1)
-                cv2.imwrite(os.path.join(path_output_dir, '%d.png') % converted, image)
+                cv2.imwrite(os.path.join(path_output_dir, '{0:03d}.png'.format(converted)), image)
                 converted += 1
             count += 1
         else:
             break
     cv2.destroyAllWindows()
     vidcap.release()
-    return converted;
+    return converted
 
 # app is GUI App Object
 def run(app):
@@ -75,18 +75,21 @@ def run(app):
     # Calculating and Printing Item list
     print ("Your Items")
     #app.changeStatus("Total Cost :\n3,000")
-    #GUI_showItems(app,["cup","glasscase","greenbar","pencilcase","rice","scissors","shave","snack","socks","spaghetti","tape","cup"])
+    detect_result = ["cup","glasscase","pencilcase","rice","scissors","shave","snack","socks","spaghetti","tape","cup","greenbar"]
+    GUI_showItems(app,detect_result)
 
     # DEMO Change Image
     #time.sleep(5)
-    app.changeImage("toimage/0.png")
-    app.update()
-    time.sleep(1)
-    app.changeImage("toimage/11.png")
-    app.update()
+    #app.changeImage("toimage/0.png")
+    #app.update()
+    #time.sleep(1)
+    #app.changeImage("toimage/11.png")
+    #app.update()
     #time.sleep(10)
     #app.changeImage("toimage/24.png")
-    calculator()
+    a, b = calculator(detect_result)
+    print (a)
+    print (b)
     
     print ("############ END #############")
     
