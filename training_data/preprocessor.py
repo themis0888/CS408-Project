@@ -17,7 +17,8 @@ from scipy import misc
 
 
 
-name_list = ['cup', 'glasscase', 'pencilcase', 'rice', 'scissors', 'shave', 'snack', 'socks', 'spaghetti', 'tape']
+#name_list = ['cup', 'glasscase', 'pencilcase', 'rice', 'scissors', 'shave', 'snack', 'socks', 'spaghetti', 'tape']
+name_list = ['greenbar']
 def video_to_frames(video, path_output_dir, cnt = 0):
     vidcap = cv2.VideoCapture(video)
     count = cnt
