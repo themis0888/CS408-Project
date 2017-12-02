@@ -17,6 +17,9 @@ def video_to_frames(video, path_output_dir):
         if success:
             # Capture Every 10 frame
             if(count % 10 == 0):
+                # Rotate Clockwise 90
+                image = cv2.transpose(image, image)
+                image = cv2.flip(image, 1)
                 cv2.imwrite(os.path.join(path_output_dir, '%d.png') % count, image)
             count += 1
         else:
