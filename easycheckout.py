@@ -1,17 +1,21 @@
+
 import cv2
 import sys
 import os
-import SAD
 import GUI
-import tkinter
-import time
+import tkinter as TK
 
+import time
+import client
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 from config import CONFIG
 from os import walk
-
+#from detector.find_boxes import detect
+sys.path.insert(0, "/Users/dhmac/Desktop/CSProject/EasyCheckout/CS408-Project/detector")
+#print (target)
+import findboxes
 # Change Every frame of video to images and return Number of images
 def video_to_frames(video, path_output_dir):
     vidcap = cv2.VideoCapture(video)
@@ -26,7 +30,7 @@ def video_to_frames(video, path_output_dir):
                 # Rotate Clockwise 90
                 image = cv2.transpose(image, image)
                 image = cv2.flip(image, 1)
-                cv2.imwrite(os.path.join(path_output_dir, '{0:03d}.png'.format(converted)), image)
+                cv2.imwrite(os.path.join(path_output_dir, '{0:03d}.jpg'.format(converted)), image)
                 converted += 1
             count += 1
         else:
@@ -50,7 +54,8 @@ def run(app):
     print ("Loading Video File : %s ..." % videofile)
     app.changeStatus("Loading ...\nVideo File")
 
-    count = video_to_frames(videofile, 'toimage')
+    count = video_to_frames(videofile, 'detector/images')
+
     if(count == 0):
         print ("Loading Video failed")
         app.changeStatus("Loading Video\nFAILED")
@@ -62,27 +67,43 @@ def run(app):
     app.changeStatus("Selecting\nImages ...")
     select_image()
     # TEMP FOR DEMO
-    #selimg1 = "toimage/19.png"
+    selctedImageList = ["detector/images/014.jpg","detector/images/010.jpg"]
     print ("Selecting Images Ended")
     
     # Detecting images
     app.changeStatus("Detecting...")
     print ("Detecting ...")
     app.update()
-    #detector(selimg1)
+
+    detect_result = detector(selctedImageList)
     print ("Detecting Ended")
     app.changeStatus("Detecing Ended")
     app.update()
+
+    app.changeStatus("Classifying ...")
+    print ("Classifying ...")
+    app.update()
+
+    # Classifier
+    classification_result = classifier()
+    print (classification_result)
+    print (detect_result)
+
+    drawBox(classification_result,detect_result)
+
     # Calculating and Printing Item list
     print ("Your Items")
     #app.changeStatus("Total Cost :\n3,000")
-    detect_result = ["cup","glasscase","pencilcase","rice","scissors","shave","snack","socks","spaghetti","tape","cup","greenbar"]
+    #detect_result = ["socks","rice","cup","snack","tape"]
     GUI_showItems(app,detect_result)
 
     # DEMO Change Image
     #time.sleep(5)
-    #app.changeImage("toimage/0.png")
-    #app.update()
+    app.changeImage("result/015.png")
+    app.update()
+
+
+    '''
     f = []
     for (a,b,filenames) in walk('result/'):
         f.extend(filenames)
@@ -94,9 +115,13 @@ def run(app):
         app.update()
     #time.sleep(10)
     #app.changeImage("toimage/24.png")
+    '''
+    
     a, b = calculator(detect_result)
     print (a)
     print (b)
+    
+    app.changeStatus("Total Cost:\n %d" % (b))
     
     print ("############ END #############")
     
@@ -104,6 +129,7 @@ def run(app):
     # If we want to reuse the program (ex : end of the program, return start)
     # It is better to get input in the program, not argv
     # and then make another function main() in the initialize function
+    
 
 
 
@@ -114,6 +140,31 @@ def select_image():
     # save image to another directory
     pass
 
+def detector(selctedImageList):
+    return findboxes.detect(selctedImageList)
+
+def classifier():
+    client.communicate()
+    return read_result()
+
+def read_result():
+    tmp = []
+    with open('test_result.txt') as f:
+        lines = f.readlines()
+        tmp = lines
+    tmp = [x.strip('\n') for x in tmp]
+
+    result = []
+    for i in range(len(tmp)):
+        if i%2==1:
+            idx = tmp[i].index('_')
+            result.append(tmp[i][idx+1:])
+        else:
+            result.append(tmp[i])
+    return result
+#print(result)
+
+'''
 def detector(testimage):
     # Basic Detector
     positions_category = []
@@ -131,6 +182,7 @@ def detector(testimage):
         SADs.append(e[3])
     SADs.sort()
     print(SADs)
+'''
 
 '''
 parser_detector : list -> list, list, list
@@ -171,9 +223,34 @@ def GUI_showItems(app, item_list = []):
     for item in item_list:
         app.insertItem(item)
 
+def drawBox(c_result,d_result):
+    dic = {}
+    categories = []
+    for i in range(len(c_result)):
+        if (i % 2 == 0):
+            # Parse ex) "000.jpg"
+            name = c_result[i][:3] + c_result[i][-4:]
+            if name in dic:
+                dic[name] = dic.get(name) + 1
+            else:
+                dic[name] = 1
+        # get category
+        else:
+            categories.append(c_result[i])
+
+    # Boxing Result
+    images = dic.keys()
+    base_index = 0
+
+    for img in images:
+        outerindex =  base_index + dic.get(img)
+        findboxes.draw_bounding_box("detector/images/" + img, d_result[base_index : outerindex], categories[base_index : outerindex])
+        base_index = base_index = dic.get(img)
+
+
 # Program Starts from Here
 if __name__ == '__main__':
-    guiFrame = tkinter.Tk()
+    guiFrame = TK.Tk()
     guiFrame.geometry("500x420")
     app = GUI.App(guiFrame)
     guiFrame.mainloop()
