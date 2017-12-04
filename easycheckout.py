@@ -105,7 +105,8 @@ def run(app):
     for name in filenames:
 
         time.sleep(0.5)
-        app.changeImage("result/" + name,resize = False)
+        #app.changeImage("result/" + name,resize = False)
+        app.changeImage("result/" + name)
        
         items = animation[name]
         print (animation)
@@ -113,9 +114,10 @@ def run(app):
         print (items)
         price = calculator(items)
         app.changeStatus("Total Cost :\n%d" % (price[1]))
+        app.clearItem()
         GUI_showItems(app, items)
         app.update()
-        app.clearItem()
+        
         
 
     #time.sleep(10)
