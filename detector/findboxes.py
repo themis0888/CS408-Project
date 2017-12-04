@@ -3,6 +3,8 @@
 import selectivesearch
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
+
+import resize_imgs
 #import sys
 
 def overlap(a, b, margin = 0):
@@ -93,6 +95,8 @@ def draw_bounding_box(target_path,boxes,categories):
     target = Image.open(target_path)
     target_mat = target.load()
 
+    #print ("draw_bounding_box %s %s" % (target_path), boxes, categories)
+
     #font = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf',16)
     for box in boxes:
         xmin,ymin,xmax,ymax = box[0],box[1],box[0]+box[2],box[1]+box[3]
@@ -179,6 +183,7 @@ def detect(selectedImageList):
         Then ultimately, 'image_result.jpg' with bounding boxes will be created.
     """
     #img = sys.argv[1]
+    result = []
     for img in selectedImageList:
         max_group = []
 
@@ -204,7 +209,13 @@ def detect(selectedImageList):
         print (max_group)
         #draw_bounding_box(img,max_group)
         crop_bounding_boxes(img,max_group)
-        return max_group
+
+        # Flatter
+        for k in max_group:
+            result.append(k)
+    #resize
+    resize_imgs.fun()
+    return result
 
 if __name__ == "__main__":
     detect()

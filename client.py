@@ -17,7 +17,7 @@ def communicate():
         filename = files
         size = len(filename)
         size = bin(size)[2:].zfill(16) # encode filename size as 16 bit binary
-        time.sleep(1)
+        time.sleep(0.1)
         #size = bytes(size, 'utf-8')
         print(size)
         print(type(size))

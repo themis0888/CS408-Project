@@ -66,9 +66,7 @@ def run(app):
     # Selecting proper images to detect
     print ("Selecting Proper Images ...")
     app.changeStatus("Selecting\nImages ...")
-    select_image()
-    # TEMP FOR DEMO
-    selctedImageList = ["detector/images/014.jpg","detector/images/010.jpg"]
+    selctedImageList = select_image()
     print ("Selecting Images Ended")
     
     # Detecting images
@@ -87,42 +85,48 @@ def run(app):
 
     # Classifier
     classification_result = classifier()
+    #classification_result = read_result()
+    #print(classification_result)
     print (classification_result)
     print (detect_result)
 
-    drawBox(classification_result,detect_result)
+    animation = drawBox(classification_result,detect_result)
 
     # Calculating and Printing Item list
     print ("Your Items")
     #app.changeStatus("Total Cost :\n3,000")
     #detect_result = ["socks","rice","cup","snack","tape"]
-    GUI_showItems(app,detect_result)
+    #GUI_showItems(app,detect_result)
 
-    # DEMO Change Image
-    #time.sleep(5)
-    app.changeImage("result/015.png")
-    app.update()
-
-
-    '''
     f = []
     for (a,b,filenames) in walk('result/'):
         f.extend(filenames)
 
     for name in filenames:
 
-        time.sleep(0.2)
-        app.changeImage("result/" + name)
+        time.sleep(0.5)
+        app.changeImage("result/" + name,resize = False)
+       
+        items = animation[name]
+        print (animation)
+        print (name)
+        print (items)
+        price = calculator(items)
+        app.changeStatus("Total Cost :\n%d" % (price[1]))
+        GUI_showItems(app, items)
         app.update()
+        app.clearItem()
+        
+
     #time.sleep(10)
     #app.changeImage("toimage/24.png")
-    '''
+
     
-    a, b = calculator(detect_result)
-    print (a)
-    print (b)
+    #a, b = calculator(detect_result)
+    #print (a)
+    #print (b)
     
-    app.changeStatus("Total Cost:\n %d" % (b))
+    #app.changeStatus("Total Cost:\n %d" % (b))
     
     print ("############ END #############")
     
@@ -139,7 +143,11 @@ def select_image():
     # select proper image to detect
     # from pre-built images
     # save image to another directory
-    pass
+    IMGS = []
+    imgs = os.listdir('detector/images')
+    for img in imgs:
+        IMGS.append('detector/images/' + img)
+    return IMGS
 
 def detector(selctedImageList):
     return findboxes.detect(selctedImageList)
@@ -231,6 +239,7 @@ def drawBox(c_result,d_result):
         if (i % 2 == 0):
             # Parse ex) "000.jpg"
             name = c_result[i][:3] + c_result[i][-4:]
+            print (name)
             if name in dic:
                 dic[name] = dic.get(name) + 1
             else:
@@ -243,10 +252,23 @@ def drawBox(c_result,d_result):
     images = dic.keys()
     base_index = 0
 
+    print ("Dic, cate")
+    print (dic)
+    print (categories)
+
+    animation = {}
+
     for img in images:
         outerindex =  base_index + dic.get(img)
+        #print ("Drawing %s %d %d" % (img, base_index, outerindex))
+        
         findboxes.draw_bounding_box("detector/images/" + img, d_result[base_index : outerindex], categories[base_index : outerindex])
-        base_index = base_index = dic.get(img)
+        animation[img] = categories[base_index : outerindex]
+        base_index = base_index + dic.get(img)
+        
+
+    # For Animation
+    return animation
 
 
 # Program Starts from Here
