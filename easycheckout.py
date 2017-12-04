@@ -13,7 +13,8 @@ from PIL import ImageDraw
 from config import CONFIG
 from os import walk
 #from detector.find_boxes import detect
-sys.path.insert(0, "/Users/dhmac/Desktop/CSProject/EasyCheckout/CS408-Project/detector")
+cwd = os.getcwd()
+sys.path.insert(0, cwd + '/detector')
 #print (target)
 import findboxes
 # Change Every frame of video to images and return Number of images
